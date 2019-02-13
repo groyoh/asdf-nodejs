@@ -4,6 +4,11 @@ set -o nounset -o pipefail -o errexit
 
 NODEJS_CHECK_SIGNATURES="${NODEJS_CHECK_SIGNATURES:-strict}"
 
+if [ "$ASDF_INSTALL_TYPE" != "version" ]; then
+  NODEJS_INSTALL_FROM_SOURCE=yes
+fi
+NODEJS_INSTALL_FROM_SOURCE="${NODEJS_INSTALL_FROM_SOURCE:-no}"
+
 # When in China, set $NODEJS_ORG_MIRROR:
 # export NODEJS_ORG_MIRROR=https://npm.taobao.org/mirrors/node/
 NODEJS_ORG_MIRROR="${NODEJS_ORG_MIRROR:-https://nodejs.org/dist/}"
@@ -30,7 +35,7 @@ install_nodejs() {
   # running this in a subshell
   # we don't want to disturb current working dir
   (
-    if [ "$install_type" != "version" ]; then
+    if [ "$NODEJS_INSTALL_FROM_SOURCE" = "yes" ]; then
       tar zxf "$archive_path" -C "$install_path" --strip-components=1 || exit 1
       cd "$install_path" || exit 1
 
@@ -39,7 +44,7 @@ install_nodejs() {
 
       # shellcheck disable=SC2086
       ./configure $configure_options || exit 1
-      make
+      make -j4
       make install
 
       if [ $? -ne 0 ]; then
@@ -112,7 +117,11 @@ get_archive_file_name() {
   local pkg_name
 
   if [ "$install_type" = "version" ]; then
-    pkg_name="node-v${version}-$(uname -s | tr '[:upper:]' '[:lower:]')-$(get_nodejs_machine_hardware_name)"
+    if [ "$NODEJS_INSTALL_FROM_SOURCE" = "yes" ]; then
+      pkg_name="node-v${version}"
+    else
+      pkg_name="node-v${version}-$(uname -s | tr '[:upper:]' '[:lower:]')-$(get_nodejs_machine_hardware_name)"
+    fi
   else
     pkg_name="${version}"
   fi

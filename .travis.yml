@@ -1,10 +1,35 @@
 language: c
-script: asdf plugin-test nodejs https://github.com/asdf-vm/asdf-nodejs.git
+script: asdf plugin-test nodejs .
+before_install:
+    - eval "${MATRIX_EVAL}"
 before_script:
-  - git clone https://github.com/asdf-vm/asdf.git
-  - . asdf/asdf.sh
+  - git clone https://github.com/asdf-vm/asdf.git ~/.asdf
+  - . ~/.asdf/asdf.sh
   - ./bin/import-release-team-keyring
-osx_image: xcode8.2
-os:
-  - linux
-  - osx
+matrix:
+  fast_finish: true
+  allow_failures:
+    - env: NODEJS_INSTALL_FROM_SOURCE=yes
+    - env:
+      - NODEJS_INSTALL_FROM_SOURCE=yes
+      - MATRIX_EVAL="export CC=cc CCX=c++"
+  include:
+    - os: linux
+    - os: osx
+      osx_image: xcode10
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - python2.7
+            - gcc-7
+            - g++-7
+      env:
+        - NODEJS_INSTALL_FROM_SOURCE=yes
+    - os: osx
+      osx_image: xcode10
+      env:
+        - NODEJS_INSTALL_FROM_SOURCE=yes
+        - MATRIX_EVAL="export CC=cc CCX=c++"
